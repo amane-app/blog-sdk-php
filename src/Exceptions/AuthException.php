@@ -9,10 +9,10 @@ class AuthException extends AmaneApiException
     public function __construct(string $detail = 'Unauthorized')
     {
         parent::__construct(
-            message: 'Authentication failed: ' . $detail,
-            statusCode: 401,
-            errorType: 'https://amane.app/errors/unauthorized',
-            detail: $detail,
+            'Authentication failed: ' . $detail,
+            401,
+            'https://amane.app/errors/unauthorized',
+            $detail
         );
     }
 }

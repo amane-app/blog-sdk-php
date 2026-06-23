@@ -8,7 +8,13 @@ use Amane\BlogSdk\Http\HttpClient;
 
 class ArticleResource
 {
-    public function __construct(private readonly HttpClient $http) {}
+    /** @var HttpClient */
+    private $http;
+
+    public function __construct(HttpClient $http)
+    {
+        $this->http = $http;
+    }
 
     public function list(array $params = []): object
     {
@@ -24,7 +30,7 @@ class ArticleResource
         string $id,
         string $url,
         ?string $publishedAt = null,
-        ?string $canonicalUrl = null,
+        ?string $canonicalUrl = null
     ): object {
         $body = ['url' => $url];
 

@@ -12,12 +12,20 @@ use Amane\BlogSdk\Resources\UsageResource;
 
 class AmaneClient
 {
-    private HttpClient $http;
+    /** @var HttpClient */
+    private $http;
 
-    private ?ArticleResource $articlesResource = null;
-    private ?TopicSuggestionResource $topicsResource = null;
-    private ?KeywordResource $keywordsResource = null;
-    private ?UsageResource $usageResource = null;
+    /** @var ArticleResource|null */
+    private $articlesResource = null;
+
+    /** @var TopicSuggestionResource|null */
+    private $topicsResource = null;
+
+    /** @var KeywordResource|null */
+    private $keywordsResource = null;
+
+    /** @var UsageResource|null */
+    private $usageResource = null;
 
     public function __construct(string $baseUrl, string $token)
     {
@@ -31,21 +39,33 @@ class AmaneClient
 
     public function articles(): ArticleResource
     {
-        return $this->articlesResource ??= new ArticleResource($this->http);
+        if ($this->articlesResource === null) {
+            $this->articlesResource = new ArticleResource($this->http);
+        }
+        return $this->articlesResource;
     }
 
     public function topics(): TopicSuggestionResource
     {
-        return $this->topicsResource ??= new TopicSuggestionResource($this->http);
+        if ($this->topicsResource === null) {
+            $this->topicsResource = new TopicSuggestionResource($this->http);
+        }
+        return $this->topicsResource;
     }
 
     public function keywords(): KeywordResource
     {
-        return $this->keywordsResource ??= new KeywordResource($this->http);
+        if ($this->keywordsResource === null) {
+            $this->keywordsResource = new KeywordResource($this->http);
+        }
+        return $this->keywordsResource;
     }
 
     public function usage(): UsageResource
     {
-        return $this->usageResource ??= new UsageResource($this->http);
+        if ($this->usageResource === null) {
+            $this->usageResource = new UsageResource($this->http);
+        }
+        return $this->usageResource;
     }
 }

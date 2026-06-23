@@ -8,12 +8,11 @@ use Amane\BlogSdk\Exceptions\AmaneApiException;
 use Amane\BlogSdk\Exceptions\AuthException;
 use Amane\BlogSdk\Exceptions\RateLimitException;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
-use GuzzleHttp\Exception\ServerException;
 
 class HttpClient
 {
-    private Client $client;
+    /** @var Client */
+    private $client;
 
     public function __construct(string $baseUrl, string $token)
     {
@@ -63,6 +62,7 @@ class HttpClient
             return $data;
         }
 
+        // null coalescing operator (??) は PHP 7.0+ で利用可
         $type   = (string) ($data['type']   ?? 'about:blank');
         $title  = (string) ($data['title']  ?? 'Error');
         $detail = (string) ($data['detail'] ?? $body);

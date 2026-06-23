@@ -8,7 +8,13 @@ use Amane\BlogSdk\Http\HttpClient;
 
 class UsageResource
 {
-    public function __construct(private readonly HttpClient $http) {}
+    /** @var HttpClient */
+    private $http;
+
+    public function __construct(HttpClient $http)
+    {
+        $this->http = $http;
+    }
 
     public function get(): object
     {
