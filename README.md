@@ -94,11 +94,11 @@ echo "position improvement: {$perf['delta']['position_improvement']}\n";
 // 一覧
 $response = $client->keywords()->list();
 
-// 追加
-$client->keywords()->create([
-    'keyword' => '名古屋 システム開発',
-    'priority' => 'high',
-]);
+// 追加 (= keywords は配列で複数渡せる。priority は省略時 'medium')
+$client->keywords()->add(['名古屋 システム開発'], 'high');
+
+// 削除
+$client->keywords()->remove('kw_xxxxxxxx');
 ```
 
 ### トピック提案
@@ -113,7 +113,7 @@ foreach ($response->data as $topic) {
 ### 使用量取得
 
 ```php
-$response = $client->usage()->current();
+$response = $client->usage()->get();
 echo "今月の配信数: {$response->data['delivered_count']}\n";
 echo "残数: {$response->data['remaining']}\n";
 ```
@@ -132,7 +132,7 @@ try {
     error_log('AMANE 認証失敗: ' . $e->getMessage());
 } catch (RateLimitException $e) {
     // 429: レート制限超過 → Retry-After 秒数尊重
-    sleep($e->getRetryAfter());
+    sleep($e->retryAfter);
 } catch (AmaneApiException $e) {
     // その他の API エラー (4xx/5xx)
     error_log('AMANE API エラー: ' . $e->getMessage());
@@ -155,6 +155,29 @@ try {
 **対策**:
 - `.env` を保存する前にエディタの改行コードを LF に設定
 - アプリケーション側で `trim($_ENV['AMANE_API_TOKEN'])` を入れて防御
+
+## 開発・テスト
+
+テストは PHPUnit で 3 つのスイートに分かれています。
+
+```bash
+composer install
+
+composer run test:unit          # 単体テスト (純粋ロジック・例外・遅延生成)
+composer run test:integration   # 結合テスト (HttpClient + 各 Resource を Guzzle モック越しに検証)
+composer run test:e2e           # E2E テスト (AmaneClient から Guzzle まで貫通する一連の操作)
+
+composer run test               # 全スイートまとめて実行
+
+composer run test:coverage      # カバレッジ計測 (要 pcov / xdebug)
+composer run coverage:check     # カバレッジが 90% 未満なら exit 1
+```
+
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) で、`main` への push /
+pull request 時に PHP 7.3〜8.4 のマトリクスで全スイートを実行し、カバレッジ 90% 以上を強制します。
+
+> **E2E の実 API スモークテスト**: `AMANE_E2E_BASE_URL` と `AMANE_E2E_TOKEN` を環境変数に
+> 設定すると、実 API への読み取り専用スモークテストも実行されます (未設定時はスキップ)。
 
 ## 関連リンク
 

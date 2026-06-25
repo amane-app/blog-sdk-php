@@ -4,6 +4,7 @@
 .vscode/
 .phpunit.cache/
 .phpunit.result.cache
+/build/
 *.log
 .DS_Store
 Thumbs.db
