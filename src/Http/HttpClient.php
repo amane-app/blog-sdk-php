@@ -17,7 +17,7 @@ class HttpClient
     public function __construct(string $baseUrl, string $token)
     {
         $this->client = new Client([
-            'base_uri' => rtrim($baseUrl, '/') . '/',
+            'base_uri' => self::normalizeBaseUrl($baseUrl),
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
                 'Accept'        => 'application/json',
@@ -25,6 +25,26 @@ class HttpClient
             ],
             'http_errors' => false,
         ]);
+    }
+
+    /**
+     * baseUrl から base_uri を組み立てる。
+     *
+     * AMANE の SaaS API は `/api/v1/` 配下にあるので、SDK 利用者が
+     *   - `https://service.amane.app`        (= プレフィックス無し)
+     *   - `https://service.amane.app/api/v1` (= プレフィックス有り)
+     * のどちらを渡しても動くように吸収する。`/api/v2` 等の将来の API
+     * バージョンが含まれていればそのまま尊重 (= 将来互換)。
+     *
+     * @internal
+     */
+    public static function normalizeBaseUrl(string $baseUrl): string
+    {
+        $baseUrl = rtrim($baseUrl, '/');
+        if (!preg_match('#/api/v\d+$#', $baseUrl)) {
+            $baseUrl .= '/api/v1';
+        }
+        return $baseUrl . '/';
     }
 
     public function get(string $path, array $query = []): array

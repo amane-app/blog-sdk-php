@@ -27,24 +27,29 @@ composer require amane/blog-sdk
 use Amane\BlogSdk\AmaneClient;
 
 $client = new AmaneClient(
-    apiUrl: 'https://service.amane.app',
-    apiToken: 'amb_xxxxxxxxxxxxx',  // AMANE 管理画面で発行
+    'https://service.amane.app',          // baseUrl (= /api/v1 は SDK が自動付与)
+    'amb_xxxxxxxxxxxxx'                   // API token (AMANE 管理画面で発行)
 );
 ```
+
+> **baseUrl について**: `https://service.amane.app` でも `https://service.amane.app/api/v1`
+> でもどちらでも動きます。SDK 内部で `/api/v1/` プレフィックスを自動付与するため、
+> 末尾スラッシュの有無も気にする必要はありません。
 
 ### 配信可能な記事一覧を取得
 
 ```php
-$articles = $client->articles()->list();
-foreach ($articles['data'] as $article) {
+$response = $client->articles()->list();
+foreach ($response->data as $article) {
     echo $article['title'] . "\n";
 }
 ```
 
-### 記事詳細を取得 (= delivered ステータスに遷移)
+### 記事詳細を取得 (= 呼ぶと delivered ステータスに自動遷移)
 
 ```php
-$article = $client->articles()->fetch('art_01HF3ABC...');
+$response = $client->articles()->get('01HF3ABC...');
+$article = $response->data;
 echo $article['content_html'];      // HTML 本文
 echo $article['content_markdown'];  // Markdown 本文
 ```
@@ -52,28 +57,104 @@ echo $article['content_markdown'];  // Markdown 本文
 ### 公開報告 (= 顧客サイトで公開した時に呼ぶ)
 
 ```php
-$client->publication()->report(
-    articleId: 'art_01HF3ABC...',
-    publishedUrl: 'https://customer.example.com/blog/article-slug',
-    publishedAt: new DateTimeImmutable(),
+$client->articles()->reportPublication(
+    '01HF3ABC...',
+    'https://customer.example.com/blog/article-slug',
+    date('c'),                                          // published_at (省略可)
+    'https://customer.example.com/blog/article-slug'    // canonical_url (省略可)
 );
+```
+
+### 公開先 URL の更新 (= 公開後に URL が変わった場合)
+
+```php
+$client->articles()->updatePublication('01HF3ABC...', [
+    'url' => 'https://customer.example.com/new-slug',
+]);
+```
+
+### 非公開化 (= 取り下げ)
+
+```php
+$client->articles()->markUnpublished('01HF3ABC...');
 ```
 
 ### 効果計測結果取得 (= 公開後 14 日以降)
 
 ```php
-$perf = $client->performance()->get('art_01HF3ABC...');
-echo "verdict: {$perf['data']['verdict']}\n";
-echo "position improvement: {$perf['data']['delta']['position_improvement']}\n";
+$response = $client->articles()->performance('01HF3ABC...');
+$perf = $response->data;
+echo "verdict: {$perf['verdict']}\n";
+echo "position improvement: {$perf['delta']['position_improvement']}\n";
+```
+
+### キーワード管理
+
+```php
+// 一覧
+$response = $client->keywords()->list();
+
+// 追加
+$client->keywords()->create([
+    'keyword' => '名古屋 システム開発',
+    'priority' => 'high',
+]);
+```
+
+### トピック提案
+
+```php
+$response = $client->topics()->list();
+foreach ($response->data as $topic) {
+    echo $topic['title'] . "\n";
+}
+```
+
+### 使用量取得
+
+```php
+$response = $client->usage()->current();
+echo "今月の配信数: {$response->data['delivered_count']}\n";
+echo "残数: {$response->data['remaining']}\n";
+```
+
+## エラーハンドリング
+
+```php
+use Amane\BlogSdk\Exceptions\AuthException;
+use Amane\BlogSdk\Exceptions\RateLimitException;
+use Amane\BlogSdk\Exceptions\AmaneApiException;
+
+try {
+    $response = $client->articles()->list();
+} catch (AuthException $e) {
+    // 401: トークン無効・失効 → 再発行を案内
+    error_log('AMANE 認証失敗: ' . $e->getMessage());
+} catch (RateLimitException $e) {
+    // 429: レート制限超過 → Retry-After 秒数尊重
+    sleep($e->getRetryAfter());
+} catch (AmaneApiException $e) {
+    // その他の API エラー (4xx/5xx)
+    error_log('AMANE API エラー: ' . $e->getMessage());
+}
 ```
 
 ## API トークンの発行
 
 1. AMANE 管理画面 (https://service.amane.app) にログイン
 2. Site 詳細 → 「📝 ブログ配信」タブ
-3. API トークン発行 (= 表示は 1 度だけ、コピーしておく)
+3. 「🔑 API トークン管理」→ 新規発行 (= 表示は 1 度だけ、コピーしておく)
 
 トークンの形式: `amb_` プレフィックス + 48 桁の hex
+
+## .env 設定の注意点
+
+`.env` を Windows エディタで編集すると CRLF (`\r\n`) で保存される場合があり、
+`AMANE_API_TOKEN` の値に `\r` が混入して Authorization ヘッダが壊れ、nginx が 400 を返すことがあります。
+
+**対策**:
+- `.env` を保存する前にエディタの改行コードを LF に設定
+- アプリケーション側で `trim($_ENV['AMANE_API_TOKEN'])` を入れて防御
 
 ## 関連リンク
 
@@ -81,6 +162,22 @@ echo "position improvement: {$perf['data']['delta']['position_improvement']}\n";
 - [JavaScript/TypeScript SDK](https://github.com/amane-app/blog-sdk-js)
 - [WordPress プラグイン](https://github.com/amane-app/blog-distribution-wp)
 - [プロダクトサイト](https://amane.app)
+
+## 変更履歴
+
+### v0.1.2 (2026-06-25)
+- **fix**: `HttpClient::normalizeBaseUrl()` を追加。baseUrl に `/api/v1` プレフィックスが無くても
+  SDK 内部で自動付与するように改善。これまで `https://service.amane.app` を渡すと SaaS の
+  SPA index.html を 200 で受けて空レスポンスになる事故が起きていたため。後方互換あり
+  (= 既に `/api/v1` を含めて渡しているコードはそのまま動く)
+- **docs**: README のサンプルを PHP 7.3 互換構文に統一。実在しないメソッド名 (`fetch` /
+  `publication()->report()` 等) を正しいメソッド名に修正
+
+### v0.1.1 (2026-06-23)
+- **feat**: PHP 7.3 互換性を追加 (旧 8.1 要求から拡大)
+
+### v0.1.0 (2026-06-22)
+- **feat**: initial release
 
 ## ライセンス
 
