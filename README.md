@@ -158,20 +158,43 @@ try {
 
 ## 開発・テスト
 
-テストは PHPUnit で 3 つのスイートに分かれています。
+テストは PHPUnit で 3 つのスイート (Unit / Integration / E2E) に分かれています。
+
+### Docker で実行 (= ローカルに PHP 不要・推奨)
+
+pcov と composer を同梱したテスト用イメージを [docker-compose.yml](docker-compose.yml) /
+[docker/Dockerfile](docker/Dockerfile) で用意しています。
+
+```bash
+docker compose build test                              # 初回のみ (イメージ作成)
+docker compose run --rm test composer install          # 初回 / 依存更新時
+
+docker compose run --rm test composer run test:unit         # 単体テスト
+docker compose run --rm test composer run test:integration  # 結合テスト
+docker compose run --rm test composer run test:e2e          # E2E テスト
+docker compose run --rm test composer run test              # 全スイートまとめて
+
+docker compose run --rm test composer run test:coverage     # カバレッジ計測
+docker compose run --rm test composer run coverage:check    # 90% 未満なら exit 1
+```
+
+`vendor/` はホストにマウントされるため `composer install` は基本 1 回でよく、
+カバレッジ HTML は `build/coverage/index.html` に出力されます。
+
+### ローカルに PHP がある場合
 
 ```bash
 composer install
-
-composer run test:unit          # 単体テスト (純粋ロジック・例外・遅延生成)
-composer run test:integration   # 結合テスト (HttpClient + 各 Resource を Guzzle モック越しに検証)
-composer run test:e2e           # E2E テスト (AmaneClient から Guzzle まで貫通する一連の操作)
-
-composer run test               # 全スイートまとめて実行
-
-composer run test:coverage      # カバレッジ計測 (要 pcov / xdebug)
-composer run coverage:check     # カバレッジが 90% 未満なら exit 1
+composer run test            # 全スイート
+composer run test:coverage   # カバレッジ計測 (要 pcov / xdebug)
+composer run coverage:check  # カバレッジが 90% 未満なら exit 1
 ```
+
+各スイートの内容:
+
+- **Unit**: 純粋ロジック (`normalizeBaseUrl` / 認証ヘッダ構築) ・例外・リソースの遅延生成
+- **Integration**: `HttpClient` の各 verb とエラーマッピング、各 Resource のメソッドを Guzzle モック越しに検証
+- **E2E**: `AmaneClient` から Guzzle まで貫通する一連の操作 (記事取得 → 公開報告 → 更新 → 取り下げ 等)
 
 GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) で、`main` への push /
 pull request 時に PHP 7.3〜8.4 のマトリクスで全スイートを実行し、カバレッジ 90% 以上を強制します。

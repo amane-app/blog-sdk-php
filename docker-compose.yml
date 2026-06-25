@@ -1,0 +1,20 @@
+# Docker でテストを実行するための設定。
+#
+#   docker compose run --rm test composer install        # 初回 / 依存更新時
+#   docker compose run --rm test composer run test        # 全スイート
+#   docker compose run --rm test composer run test:coverage
+#   docker compose run --rm test composer run coverage:check
+#
+# vendor/ はホスト側にマウントされるため、composer install は基本 1 回でよい。
+services:
+  test:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: amane-blog-sdk-test
+    volumes:
+      - .:/app
+      - composer-cache:/tmp/composer-cache
+
+volumes:
+  composer-cache:
