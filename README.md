@@ -1,5 +1,6 @@
 # AMANE Blog Distribution — PHP SDK
 
+[![CI](https://github.com/amane-app/blog-sdk-php/actions/workflows/ci.yml/badge.svg)](https://github.com/amane-app/blog-sdk-php/actions/workflows/ci.yml)
 [![Latest Version](https://img.shields.io/packagist/v/amane/blog-sdk.svg)](https://packagist.org/packages/amane/blog-sdk)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
