@@ -26,13 +26,23 @@ class ArticleResource
         return (object) $this->http->get('/articles/' . $id);
     }
 
+    /**
+     * 記事の公開を報告する。
+     *
+     * API は body に `published_url` (必須) / `published_at` (必須) を期待する。
+     * 顧客 CMS で編集した実タイトル等があれば actualTitle / actualMetaDescription /
+     * deviationNotes も送れる (= 配信ダッシュボードに実態を反映するため)。
+     */
     public function reportPublication(
         string $id,
         string $url,
         ?string $publishedAt = null,
-        ?string $canonicalUrl = null
+        ?string $canonicalUrl = null,
+        ?string $actualTitle = null,
+        ?string $actualMetaDescription = null,
+        ?string $deviationNotes = null
     ): object {
-        $body = ['url' => $url];
+        $body = ['published_url' => $url];
 
         if ($publishedAt !== null) {
             $body['published_at'] = $publishedAt;
@@ -40,6 +50,18 @@ class ArticleResource
 
         if ($canonicalUrl !== null) {
             $body['canonical_url'] = $canonicalUrl;
+        }
+
+        if ($actualTitle !== null) {
+            $body['actual_title'] = $actualTitle;
+        }
+
+        if ($actualMetaDescription !== null) {
+            $body['actual_meta_description'] = $actualMetaDescription;
+        }
+
+        if ($deviationNotes !== null) {
+            $body['deviation_notes'] = $deviationNotes;
         }
 
         return (object) $this->http->post('/articles/' . $id . '/publication', $body);

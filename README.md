@@ -60,9 +60,12 @@ echo $article['content_markdown'];  // Markdown 本文
 ```php
 $client->articles()->reportPublication(
     '01HF3ABC...',
-    'https://customer.example.com/blog/article-slug',
+    'https://customer.example.com/blog/article-slug',   // published_url (必須)
     date('c'),                                          // published_at (省略可)
-    'https://customer.example.com/blog/article-slug'    // canonical_url (省略可)
+    'https://customer.example.com/blog/article-slug',   // canonical_url (省略可)
+    'CMS で編集した実タイトル',                          // actual_title (省略可)
+    'CMS で編集した実 meta description',                // actual_meta_description (省略可)
+    '見出しを 1 つ追加'                                 // deviation_notes (省略可)
 );
 ```
 
@@ -70,7 +73,7 @@ $client->articles()->reportPublication(
 
 ```php
 $client->articles()->updatePublication('01HF3ABC...', [
-    'url' => 'https://customer.example.com/new-slug',
+    'published_url' => 'https://customer.example.com/new-slug',
 ]);
 ```
 

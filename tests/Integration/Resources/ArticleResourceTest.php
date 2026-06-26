@@ -48,7 +48,7 @@ final class ArticleResourceTest extends TestCase
         $this->assertSame('POST', $request->getMethod());
         $this->assertSame('/api/v1/articles/01HF/publication', $request->getUri()->getPath());
         $this->assertSame(
-            ['url' => 'https://blog.test/post'],
+            ['published_url' => 'https://blog.test/post'],
             json_decode((string) $request->getBody(), true)
         );
     }
@@ -62,13 +62,19 @@ final class ArticleResourceTest extends TestCase
             '01HF',
             'https://blog.test/post',
             '2026-06-25T10:00:00Z',
-            'https://blog.test/canonical'
+            'https://blog.test/canonical',
+            'CMS で直したタイトル',
+            'CMS で直した meta',
+            '見出しを 1 つ追加'
         );
 
         $body = json_decode((string) $mock->lastRequest()->getBody(), true);
-        $this->assertSame('https://blog.test/post', $body['url']);
+        $this->assertSame('https://blog.test/post', $body['published_url']);
         $this->assertSame('2026-06-25T10:00:00Z', $body['published_at']);
         $this->assertSame('https://blog.test/canonical', $body['canonical_url']);
+        $this->assertSame('CMS で直したタイトル', $body['actual_title']);
+        $this->assertSame('CMS で直した meta', $body['actual_meta_description']);
+        $this->assertSame('見出しを 1 つ追加', $body['deviation_notes']);
     }
 
     public function testUpdatePublication(): void
